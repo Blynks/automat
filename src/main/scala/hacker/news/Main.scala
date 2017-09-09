@@ -31,7 +31,7 @@ object Main extends App {
       case _ => println("No Title")
     }
 
-  
+
   }
 
 
