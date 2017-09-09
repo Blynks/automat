@@ -20,19 +20,49 @@ object Main extends App {
   // add parallelism**
   // if comments are less than 10?
   // control for timeout
-
+  // recusively search all children items in a thread
   // get the IDs of the top 30 stories
   val storyIDs = getHackerNewsTopStoryIDs()
 
 //   for each of these stories, find the top 10 commenters
-  for (x <- storyIDs) {
-    getItemByID(x).title match {
+  for ((x, count)<- storyIDs.zipWithIndex) {
+    print(s"Story ${count + 1}: ")
+    val item = getItemByID(x)
+
+    item.title match {
       case Some(value: String) => println(value)
       case _ => println("No Title")
     }
 
+    val topStoryComments = getTopStoriesComments.toSet
+    // ONLY CHECKS FIRST 10 FIX THIS
+    for (y <- getItemByID(x).kids.take(10)) {
+      val userName = getUserByItemId(y)
 
+      userName match {
+        case "item deleted" => println("deleted comment")
+        case _ =>
+          val userSubmitted = getUserComments(userName).toSet
+          val itemKids = item.kids.toSet
+
+
+          val numberOfPostsInThisThread = userSubmitted.intersect(itemKids).size
+          val numberOfPostsInTopThreads = userSubmitted.intersect(topStoryComments).size
+
+          println(s"$userName (thread score: $numberOfPostsInThisThread, total score: $numberOfPostsInTopThreads)")
+      }
+    }
+    println()
   }
-
-
+//  val testItem = getItemByID("15208138")
+//  val testItem2 = getItemByID("15207670")
+//
+//  def isLeafComment(item: Item): Boolean = {
+//    item.kids match {
+//      case Nil => true
+//      case _ => false
+//    }
+//  }
+//  println(isLeafComment(testItem))
+//  println(isLeafComment(testItem2))
 }

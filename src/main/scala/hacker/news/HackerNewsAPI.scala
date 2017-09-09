@@ -51,7 +51,6 @@ object HackerNewsAPI {
 
         userProfile.submitted
     }
-
   }
 
   def getTopStoriesComments: List[String] = {
