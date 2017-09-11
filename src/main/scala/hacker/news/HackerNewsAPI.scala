@@ -3,6 +3,8 @@ package hacker.news
 import hacker.news.Utils._
 import net.liftweb.json._
 
+import scala.collection.mutable.ListBuffer
+
 
 object HackerNewsAPI {
   implicit val formats = DefaultFormats // brings in defaults for case classes
@@ -61,4 +63,44 @@ object HackerNewsAPI {
   }
 
 
+  /**
+    * Traverses the thread for comments and nested comments
+    *
+    *
+    */
+
+  def commentTraversal(thread: Item): Unit = {
+    thread.kids match {
+      case Nil =>
+        println(thread.id)
+        println(thread)
+      case _ =>
+        println(thread.id)
+        println(thread)
+        val childrenItems = thread.kids
+          .par
+          .map(x => getItemByID(x))
+          .map(y => commentTraversal(y))
+    }
+  }
+
+  def getAllThreadIDs(thread: Item): List[String] = {
+    var allComments = new ListBuffer[String]()
+
+    def commentTraversal2(thread: Item): Unit = {
+      thread.kids match {
+        case Nil =>
+          allComments += thread.id
+        case _ =>
+          allComments += thread.id
+          val childrenItems = thread.kids
+            .par // parallelized api calls
+            .map(x => getItemByID(x))
+            .map(y => commentTraversal2(y))
+      }
+    }
+
+    commentTraversal2(thread)
+    allComments.toList
+  }
 }
