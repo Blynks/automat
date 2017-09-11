@@ -24,6 +24,8 @@ object Main extends App {
   // control for timeout
   // recusively search all children items in a thread
   // get the IDs of the top 30 stories
+  // dockerize
+  // unit testing
   val storyIDs = getHackerNewsTopStoryIDs()
 
 //   for each of these stories, find the top 10 commenters
@@ -94,10 +96,10 @@ object Main extends App {
       .groupBy(k => k._1)
       .mapValues(_.map(_._2).sum)
 
-    val seq = allUsersAndScores.toSeq
+    val seq = allUsersAndScores.toSeq.filterNot(x => x._1 == "item deleted")
     val sortedSeq = seq.sortWith(_._2 > _._2).take(10)
     for (x <- sortedSeq) {
-      val totalScore = sortedTopCommenters(x._1)
+      val totalScore = sortedTopCommenters.getOrElse(x._1, 1)
       println(s"${x._1} (thread score: ${x._2}, total score: $totalScore)")
     }
     println
