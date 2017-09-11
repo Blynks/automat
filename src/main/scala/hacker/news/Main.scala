@@ -4,6 +4,8 @@ import HackerNewsAPI._
 import net.liftweb.json._
 import hacker.news.Utils._
 
+import scala.collection.immutable.ListMap
+
 /**
   *
   * Using the Hacker News API Documentation (https://github.com/HackerNews/API)
@@ -56,15 +58,7 @@ object Main extends App {
 //  }
   val testItem = getItemByID("15208138")
   val testItem2 = getItemByID("15214602")
-//
-//  def isLeafComment(item: Item): Boolean = {
-//    item.kids match {
-//      case Nil => true
-//      case _ => false
-//    }
-//  }
-//  println(isLeafComment(testItem))
-//  println(isLeafComment(testItem2))
+
 
 //  commentTraversal(testItem2)
 //  getAllThreadIDs(testItem2).foreach(println)
@@ -73,10 +67,39 @@ object Main extends App {
     .par
     .map(y => getItemByID(y))
     .flatMap(x => getAllThreadIDs(x))
-    .map(n => (getUserByItemId(n), 1))
+    .map(n => getUserByItemId(n) -> 1)
     .groupBy(k => k._1)
     .mapValues(_.map(_._2).sum)
-    
 
-  topCommenters.foreach(x => println(x))
+  val sortedTopCommenters = topCommenters.toMap
+
+
+//  topCommenters.foreach(x => println(x))
+//  println(sortedTopCommenters)
+//  sortedTopCommenters.keys.foreach(println)
+//  println(sortedTopCommenters("pmoriarty"))
+
+  for ((x, count)<- storyIDs.zipWithIndex) {
+    print(s"Story ${count + 1}: ")
+    val item = getItemByID(x)
+
+    item.title match {
+      case Some(value: String) => println(value)
+      case _ => println("No Title")
+    }
+
+    val allCommentsForThread = getAllThreadIDs(item)
+    val allUsersAndScores: Map[String, Int] = allCommentsForThread
+      .map(x => getUserByItemId(x) -> 1)
+      .groupBy(k => k._1)
+      .mapValues(_.map(_._2).sum)
+
+    val seq = allUsersAndScores.toSeq
+    val sortedSeq = seq.sortWith(_._2 > _._2).take(10)
+    for (x <- sortedSeq) {
+      val totalScore = sortedTopCommenters(x._1)
+      println(s"${x._1} (thread score: ${x._2}, total score: $totalScore)")
+    }
+    println
+  }
 }
