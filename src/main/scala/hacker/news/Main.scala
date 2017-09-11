@@ -56,7 +56,6 @@ object Main extends App {
 //          println(s"$userName (thread score: $numberOfPostsInThisThread, total score: $numberOfPostsInTopThreads)")
 //      }
 //    }
-//    println()
 //  }
   val testItem = getItemByID("15208138")
   val testItem2 = getItemByID("15214602")
