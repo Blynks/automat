@@ -1,10 +1,6 @@
 package hacker.news
 
 import HackerNewsAPI._
-import net.liftweb.json._
-import hacker.news.Utils._
-
-import scala.collection.parallel.ParMap
 
 /**
   * Using the Hacker News API Documentation (https://github.com/HackerNews/API)
@@ -13,48 +9,34 @@ import scala.collection.parallel.ParMap
   * comments that they posted (only for these 30 stories).
   *
   * The program has to parallelize requests and aggregate the results as efficiently as possible.
+  *
+  * ToDo:
+  * - Create HTTP client to control for server downtime and timeouts
+  * - Mock API and create unit tests
+  * - Dockerize deployment
+  *
   */
 
 object Main extends App {
-  implicit val formats = DefaultFormats
-  // deal with errors and timeout
-  // add parallelism**
-  // control for timeout
-  // dockerize
-  // unit testing
   // use Futures for concurrency
-  val storyIDs = getHackerNewsTopStoryIDs() // default top 30 stories
+  val topStoryIDs = getHackerNewsTopStoryIDs() // default top 30 stories
+  val topStoryItems = topStoryIDs.map(storyID => getItemByID(storyID))
 
-  val topCommenters: ParMap[String, Int] = storyIDs
-    .par
-    .map(y => getItemByID(y))
-    .flatMap(x => getAllChildrenIDs(x))
-    .map(n => getUserByItemID(n) -> 1)
-    .groupBy(k => k._1)
-    .mapValues(_.map(_._2).sum)
+  // acts as a cache for user scores for top stories
+  val userScoresForTopStories = topStoryItems.flatMap(storyItem => getUserScoresByThread(storyItem)).toMap
 
-  val sortedTopCommenters = topCommenters.toMap
+  for ((storyItem, storyNumber) <- topStoryItems.zipWithIndex) {
+    print(s"Story ${storyNumber + 1}: ")
+    val storyTitle = getItemTitle(storyItem)
+    println(storyTitle)
 
-  for ((storyID, storyCount) <- storyIDs.zipWithIndex) {
-    print(s"Story ${storyCount + 1}: ")
-    val storyItem = getItemByID(storyID)
+    val threadScores = getUserScoresByThread(storyItem)
+    val topCommenters: Map[String, Int] = getTopUserScores(threadScores)
 
-    storyItem.title match {
-      case Some(value: String) => println(value)
-      case _ => println("No Title")
-    }
-
-    val allCommentsForThread = getAllChildrenIDs(storyItem)
-    val allUsersAndScores: Map[String, Int] = allCommentsForThread
-      .map(x => getUserByItemID(x) -> 1)
-      .groupBy(k => k._1)
-      .mapValues(_.map(_._2).sum)
-
-    val seq: Seq[(String, Int)] = allUsersAndScores.toSeq.filterNot(x => x._1 == "item deleted")
-    val sortedSeq = seq.sortWith(_._2 > _._2).take(10)
-    for (x <- sortedSeq) {
-      val totalScore = sortedTopCommenters.getOrElse(x._1, 1)
-      println(s"${x._1} (thread score: ${x._2}, total score: $totalScore)")
+    for (topCommenter <- topCommenters) {
+      val (userName, userStoryScore) = (topCommenter._1, topCommenter._2)
+      val usersTotalScore = userScoresForTopStories.getOrElse(topCommenter._1, userStoryScore)
+      println(s"$userName (thread score: $userStoryScore, total score: $usersTotalScore)")
     }
     println
   }

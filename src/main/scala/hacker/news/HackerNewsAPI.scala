@@ -4,7 +4,6 @@ import hacker.news.Utils._
 import net.liftweb.json._
 
 import scala.collection.mutable.ListBuffer
-import scala.collection.parallel.ParMap
 
 
 object HackerNewsAPI {
@@ -60,6 +59,21 @@ object HackerNewsAPI {
   }
 
   /**
+    * Get the title of the story or thread.
+    *
+    * Comments, dead or deleted items do not have titles.
+    *
+    * @param storyItem valid item (story, comment etc...)
+    * @return title of the story
+    */
+  def getItemTitle(storyItem: Item): String = {
+    storyItem.title match {
+      case Some(title: String) => title
+      case _ => "No Title"
+    }
+  }
+
+  /**
     * BFS traversal starting from a comment or thread.
     *
     * @param rootItem root node
@@ -86,14 +100,36 @@ object HackerNewsAPI {
     commentAccumulator.toList
   }
 
-  def getUserScoresByThread(thread: Item): ParMap[String, Int] = {
+  /**
+    * Get the scores for each user in the story/thread.
+    * Format: (username, score)
+    *
+    * ex (hackerdude123, 10)
+    *
+    * @param thread story to calculate score
+    * @return map of user and score
+    */
+  def getUserScoresByThread(thread: Item): Map[String, Int] = {
     val commentIDsByThread = getAllChildrenIDs(thread)
     val userScores = commentIDsByThread
-      .par.map(storyID => getUserByItemID(storyID) -> 1)
-      .filter(userPost => userPost._1 != "item deleted")
+      .map(storyID => getUserByItemID(storyID) -> 1) // give a score of 1 per post
+      .filter(userPost => userPost._1 != "item deleted") // remove dead or deleted items
       .groupBy(userPost => userPost._1)
       .mapValues(_.map(_._2).sum) // sum by user name
 
     userScores
+  }
+
+  /**
+    * Get the top N comments on a thread.
+    * Default value of 10.
+    *
+    * @param userScores list of unsorted user scores
+    * @param numberOfUsers desired number of top commenters
+    * @return map of the top N commenters for a story
+    */
+  def getTopUserScores(userScores: Map[String, Int], numberOfUsers: Int = 10): Map[String, Int] = {
+    val sortedUserScores = userScores.toSeq.sortWith(_._2 > _._2)
+    sortedUserScores.take(numberOfUsers).toMap
   }
 }
