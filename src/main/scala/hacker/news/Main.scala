@@ -1,6 +1,7 @@
 package hacker.news
 
 import HackerNewsAPI._
+import hacker.news.Utils.{Score, Username}
 
 /**
   * Using the Hacker News API Documentation (https://github.com/HackerNews/API)
@@ -14,6 +15,7 @@ import HackerNewsAPI._
   * - Create HTTP client to control for server downtime and timeouts
   * - Mock API and create unit tests
   * - Dockerize deployment
+  * - Wrap API calls in Futures for concurrency
   *
   */
 
@@ -31,7 +33,7 @@ object Main extends App {
     println(storyTitle)
 
     val threadScores = getUserScoresByThread(storyItem)
-    val topCommenters: Map[String, Int] = getTopUserScores(threadScores)
+    val topCommenters: Map[Username, Score] = getTopUserScores(threadScores)
 
     for (topCommenter <- topCommenters) {
       val (userName, userStoryScore) = (topCommenter._1, topCommenter._2)

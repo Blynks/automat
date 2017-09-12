@@ -20,10 +20,10 @@ object HackerNewsAPI {
     * @param numberOfStories the desired number of top stories (up to 500)
     * @return Array containing the IDs of N top stories
     */
-  def getHackerNewsTopStoryIDs(numberOfStories: Int = 30): List[String] = {
+  def getHackerNewsTopStoryIDs(numberOfStories: Int = 30): List[StoryID] = {
     val topStoriesURL: URL = "https://hacker-news.firebaseio.com/v0/topstories.json"
     val request: JSON = parse(scala.io.Source.fromURL(topStoriesURL).mkString)
-    val topStoryIDs = request.extract[List[String]]
+    val topStoryIDs = request.extract[List[StoryID]]
 
     topStoryIDs.take(numberOfStories)
   }
@@ -51,9 +51,9 @@ object HackerNewsAPI {
     * @param id the ID of the user
     * @return the username associated with the ID
     */
-  def getUserByItemID(id: String): String = {
+  def getUserByItemID(id: String): Username = {
     getItemByID(id).by match {
-      case Some(userID: String) => userID
+      case Some(userName: Username) => userName
       case _ => "item deleted"
     }
   }
@@ -66,9 +66,9 @@ object HackerNewsAPI {
     * @param storyItem valid item (story, comment etc...)
     * @return title of the story
     */
-  def getItemTitle(storyItem: Item): String = {
+  def getItemTitle(storyItem: Item): StoryName = {
     storyItem.title match {
-      case Some(title: String) => title
+      case Some(title: StoryName) => title
       case _ => "No Title"
     }
   }
@@ -79,8 +79,8 @@ object HackerNewsAPI {
     * @param rootItem root node
     * @return list of comment ids and all their children ids
     */
-  def getAllChildrenIDs(rootItem: Item): List[String] = {
-    var commentAccumulator = new ListBuffer[String]() // should convert to a case class
+  def getAllChildrenIDs(rootItem: Item): List[StoryID] = {
+    var commentAccumulator = new ListBuffer[StoryID]() // should convert to a case class
 
     // keep traversing while an item has children
     def itemTraversal(thread: Item): Unit = {
@@ -109,7 +109,7 @@ object HackerNewsAPI {
     * @param thread story to calculate score
     * @return map of user and score
     */
-  def getUserScoresByThread(thread: Item): Map[String, Int] = {
+  def getUserScoresByThread(thread: Item): Map[Username, Score] = {
     val commentIDsByThread = getAllChildrenIDs(thread)
     val userScores = commentIDsByThread
       .map(storyID => getUserByItemID(storyID) -> 1) // give a score of 1 per post
@@ -128,7 +128,7 @@ object HackerNewsAPI {
     * @param numberOfUsers desired number of top commenters
     * @return map of the top N commenters for a story
     */
-  def getTopUserScores(userScores: Map[String, Int], numberOfUsers: Int = 10): Map[String, Int] = {
+  def getTopUserScores(userScores: Map[Username, Score], numberOfUsers: Int = 10): Map[String, Int] = {
     val sortedUserScores = userScores.toSeq.sortWith(_._2 > _._2)
     sortedUserScores.take(numberOfUsers).toMap
   }
