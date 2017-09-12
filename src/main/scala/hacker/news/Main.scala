@@ -60,6 +60,8 @@ object Main extends App {
     * This second solution is much faster. Get comment IDs from each thread and find the intersection with each user's
     * submitted comments. Algorithmically less efficient but has fewer API calls.
     *
+    * Only recently thought of this solution, need to clean it up.
+    *
     */
   def secondSolution(): Unit = {
     // need to block here for accurate results
@@ -76,10 +78,11 @@ object Main extends App {
       val topStoryUsers = getAllChildrenIDs(storyItem)
         .map(x => getUserNameByItemID(x))
         .filter(username => username != "item deleted")
+        .toSet // remove duplicates
 
       val commentIDsForThisStory = getAllChildrenIDs(storyItem).toSet
 
-      val commenterScores: List[(Username, Score)] = topStoryUsers
+      val commenterScores: List[(Username, Score)] = topStoryUsers.toList
         .map(user => (user, getScore(user, commentIDsForThisStory)))
 
       val topCommentersWithThreadScores = getSetOfTopUserScores(commenterScores)
