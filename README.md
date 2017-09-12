@@ -1,13 +1,13 @@
 # Automat
 
 ## ToDo:
-* - Create HTTP client to control for server downtime and timeouts
-* - Mock API and create unit tests
-* - Dockerize deployment
-* - Wrap API calls in Futures for concurrency
+- Create HTTP client to control for server downtime and timeouts
+- Mock API and create unit tests
+- Dockerize deployment
+- Wrap API calls in Futures for concurrency
 
 ## Sample Output:
-'''
+```
 Story 1: The backdoor threat
 sohkamyung (thread score: 1, total score: 2)
 
@@ -323,4 +323,4 @@ Swizec (thread score: 2, total score: 4)
 samfriedman (thread score: 2, total score: 2)
 jrowley (thread score: 2, total score: 3)
 kentosi (thread score: 2, total score: 2)
-'''
+```
