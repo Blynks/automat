@@ -1,7 +1,11 @@
 package hacker.news
 
 import HackerNewsAPI._
-import hacker.news.Utils.{Score, Username}
+import hacker.news.Utils.{Score, StoryID, Username}
+
+import scala.concurrent.{Await, Future}
+import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
   * Using the Hacker News API Documentation (https://github.com/HackerNews/API)
@@ -24,22 +28,69 @@ object Main extends App {
   val topStoryIDs = getHackerNewsTopStoryIDs() // default top 30 stories
   val topStoryItems = topStoryIDs.map(storyID => getItemByID(storyID))
 
-  // acts as a cache for user scores for top stories
-  val userScoresForTopStories = topStoryItems.flatMap(storyItem => getUserScoresByThread(storyItem)).toMap
+  /**
+    * This is the first solution I thought about. Convert each comment to a tuple of (username, 1)
+    * then aggregate by username. Solution was slow when when parallelized.
+    *
+    * Potentially faster if API calls were wrapped into Futures (ToDo)?
+    *
+    */
+  def firstSolution(): Unit = {
+    // acts as a cache for user scores for top stories
+    val userScoresForTopStories = topStoryItems.flatMap(storyItem => getUserScoresByThread(storyItem)).toMap
 
-  for ((storyItem, storyNumber) <- topStoryItems.zipWithIndex) {
-    print(s"Story ${storyNumber + 1}: ")
-    val storyTitle = getItemTitle(storyItem)
-    println(storyTitle)
+    for ((storyItem, storyNumber) <- topStoryItems.zipWithIndex) {
+      print(s"Story ${storyNumber + 1}: ")
+      val storyTitle = getItemTitle(storyItem)
+      println(storyTitle)
 
-    val threadScores = getUserScoresByThread(storyItem)
-    val topCommenters: Map[Username, Score] = getTopUserScores(threadScores)
+      val threadScores = getUserScoresByThread(storyItem)
+      val topCommenters: Map[Username, Score] = getTopUserScores(threadScores)
 
-    for (topCommenter <- topCommenters) {
-      val (userName, userStoryScore) = (topCommenter._1, topCommenter._2)
-      val usersTotalScore = userScoresForTopStories.getOrElse(topCommenter._1, userStoryScore)
-      println(s"$userName (thread score: $userStoryScore, total score: $usersTotalScore)")
+      for (topCommenter <- topCommenters) {
+        val (userName, userStoryScore) = (topCommenter._1, topCommenter._2)
+        val usersTotalScore = userScoresForTopStories.getOrElse(topCommenter._1, userStoryScore)
+        println(s"$userName (thread score: $userStoryScore, total score: $usersTotalScore)")
+      }
+      println
     }
-    println
   }
+
+  /**
+    * This second solution is much faster. Get comment IDs from each thread finds the intersect with each user's
+    * submitted comments. Algorithmically less efficient but has less API calls, running faster in real life.
+    *
+    */
+  def secondSolution(): Unit = {
+    // need to block here for accurate results
+    val commentIDsForTopStories: Set[StoryID] = Await.result({
+      Future { topStoryItems.flatMap(storyItem => getAllChildrenIDs(storyItem)).toSet }
+      }, 2 minutes)
+
+    for ((storyItem, storyNumber) <- topStoryItems.zipWithIndex) {
+      print(s"Story ${storyNumber + 1}: ")
+      val storyTitle = getItemTitle(storyItem)
+      println(storyTitle)
+
+      // users who posted in the top stories
+      val topStoryUsers = getAllChildrenIDs(storyItem)
+        .map(x => getUserNameByItemID(x))
+        .filter(username => username != "item deleted")
+
+      val commentIDsForThisStory = getAllChildrenIDs(storyItem).toSet
+
+      val commenterScores: List[(Username, Score)] = topStoryUsers
+        .map(user => (user, getScore(user, commentIDsForThisStory)))
+
+      val topCommentersWithThreadScores = getSetOfTopUserScores(commenterScores)
+      val topCommentersWithAllScores = for ((user, score) <- topCommentersWithThreadScores)
+        yield (user, score, getScore(user, commentIDsForTopStories))
+
+      topCommentersWithAllScores.foreach(x => println(s"${x._1} (thread score: ${x._2}, total score: ${x._3})"))
+      println
+    }
+  }
+
+  // only run second solution
+  secondSolution()
 }

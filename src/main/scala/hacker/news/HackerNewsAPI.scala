@@ -132,4 +132,54 @@ object HackerNewsAPI {
     val sortedUserScores = userScores.toSeq.sortWith(_._2 > _._2)
     sortedUserScores.take(numberOfUsers).toMap
   }
+
+  /**
+    * Gets the author of an item if the item wasn't deleted or is dead.
+    *
+    * @param id item id
+    * @return the author of the item
+    */
+  def getUserNameByItemID(id: StoryID): Username = getItemByID(id).by match {
+    case Some(value: Username) => value
+    case _ => "item deleted"
+  }
+
+  /**
+    * Gets the set of comment IDs submitted by a particular user.
+    *
+    * @param userName the username or author
+    * @return set of comments IDs from a particular user
+    */
+  def getUserSubmittedCommentIDs(userName: Username): Set[StoryID] = userName match {
+    case null => Set("No Comments")
+    case _ =>
+      val userURL: URL = s"https://hacker-news.firebaseio.com/v0/user/$userName.json"
+      val request: JSON = parse(scala.io.Source.fromURL(userURL).mkString)
+      val userProfile: User = request.extract[User]
+      userProfile.submitted.toSet
+  }
+
+  /**
+    * Gets the score of the user by finding the intersection between submitted items and items in the thread.
+    *
+    * @param userName user of interest
+    * @param threadCommentIDs the set of item IDs you want the user to be scored with
+    * @return user's score for a particular set of comments
+    */
+  def getScore(userName: Username, threadCommentIDs: Set[StoryID]): Score =
+    getUserSubmittedCommentIDs(userName).intersect(threadCommentIDs).size
+
+  /**
+    * Gets the top N number of users, scored by the number of posts.
+    *
+    * Default of top 10 commenters.
+    *
+    * @param commenterScores list of users and their scores
+    * @param numberOfUsers the top number of users with the highest number of comments
+    * @return top commenters of the list
+    */
+  def getSetOfTopUserScores(commenterScores: List[(Username, Score)],
+                            numberOfUsers: Int = 10): List[(Username, Score)] = {
+    commenterScores.sortWith(_._2 > _._2).take(numberOfUsers)
+  }
 }
