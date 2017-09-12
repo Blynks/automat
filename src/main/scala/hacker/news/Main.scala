@@ -30,9 +30,9 @@ object Main extends App {
 
   /**
     * This is the first solution I thought about. Convert each comment to a tuple of (username, 1)
-    * then aggregate by username. Solution was slow when when parallelized.
+    * then aggregate by username. Solution was slow even when parallelized.
     *
-    * Potentially faster if API calls were wrapped into Futures (ToDo)?
+    * Potentially faster if API calls were wrapped into Futures (ToDo).
     *
     */
   def firstSolution(): Unit = {
@@ -57,8 +57,8 @@ object Main extends App {
   }
 
   /**
-    * This second solution is much faster. Get comment IDs from each thread finds the intersect with each user's
-    * submitted comments. Algorithmically less efficient but has less API calls, running faster in real life.
+    * This second solution is much faster. Get comment IDs from each thread and find the intersection with each user's
+    * submitted comments. Algorithmically less efficient but has fewer API calls.
     *
     */
   def secondSolution(): Unit = {
