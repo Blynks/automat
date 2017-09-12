@@ -1,13 +1,13 @@
 # Automat
 
 ## ToDo:
-* - Create HTTP client to control for server downtime and timeouts
-* - Mock API and create unit tests
-* - Dockerize deployment
-* - Wrap API calls in Futures for concurrency
+- Create HTTP client to control for server downtime and timeouts
+- Mock API and create unit tests
+- Dockerize deployment
+- Wrap API calls in Futures for concurrency
 
 ## Sample Output:
-'''
+```
 Story 1: Chrome's Plan to Distrust Symantec Certificates
 JoshTriplett (thread score: 2, total score: 2)
 dragonwriter (thread score: 2, total score: 1)
@@ -307,4 +307,4 @@ damonli (thread score: 1, total score: 1)
 rexreed (thread score: 1, total score: 1)
 fancyPantsZero (thread score: 1, total score: 1)
 jradd (thread score: 1, total score: 1)
-'''
+```
